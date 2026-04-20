@@ -74,62 +74,56 @@ ALTER TABLE "BD_NosAlive" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "DISTRIB_NosAlive" ENABLE ROW LEVEL SECURITY;
 
 -- ==================
--- 3. POLÍTICAS RLS — só utilizadores autenticados
+-- 3. POLÍTICAS RLS
 -- ==================
 
-CREATE POLICY "auth_all" ON "BD_RiR" FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "auth_all" ON "DISTRIB_RiR" FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "auth_all" ON "BD_NosAlive" FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "auth_all" ON "BD_RiR"          FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "auth_all" ON "DISTRIB_RiR"      FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "auth_all" ON "BD_NosAlive"      FOR ALL TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "auth_all" ON "DISTRIB_NosAlive" FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
 -- ==================
--- 4. DADOS INICIAIS — DISTRIB_RiR
+-- 4. DISTRIB_RiR — seed
 -- ==================
 
-INSERT INTO "DISTRIB_RiR" ("NrBilhete","Tipo","Dia","Status","AcaoParceiro") VALUES
-  ('25699116','VIP','20jun','Disponível',NULL),
-  ('25699117','VIP','21jun','Disponível',NULL),
-  ('25699118','VIP','27jun','Disponível',NULL),
-  ('25699119','VIP','28jun','Disponível',NULL),
-  ('25699201','Relvado','20jun','Disponível',NULL),
-  ('25699202','Relvado','20jun','Disponível',NULL),
-  ('25699203','Relvado','21jun','Disponível',NULL),
-  ('25699204','Relvado','27jun','Disponível',NULL),
-  ('25699205','Relvado','28jun','Disponível',NULL),
-  ('25691971','Rooftop','20jun','Disponível','Jornalista'),
-  ('25691972','Rooftop','21jun','Disponível','Jornalista');
+INSERT INTO "DISTRIB_RiR" ("NrBilhete","Tipo","Dia","Status") VALUES ('25699116','VIP','20jun','Disponível');
+INSERT INTO "DISTRIB_RiR" ("NrBilhete","Tipo","Dia","Status") VALUES ('25699117','VIP','21jun','Disponível');
+INSERT INTO "DISTRIB_RiR" ("NrBilhete","Tipo","Dia","Status") VALUES ('25699118','VIP','27jun','Disponível');
+INSERT INTO "DISTRIB_RiR" ("NrBilhete","Tipo","Dia","Status") VALUES ('25699119','VIP','28jun','Disponível');
+INSERT INTO "DISTRIB_RiR" ("NrBilhete","Tipo","Dia","Status") VALUES ('25699201','Relvado','20jun','Disponível');
+INSERT INTO "DISTRIB_RiR" ("NrBilhete","Tipo","Dia","Status") VALUES ('25699202','Relvado','20jun','Disponível');
+INSERT INTO "DISTRIB_RiR" ("NrBilhete","Tipo","Dia","Status") VALUES ('25699203','Relvado','21jun','Disponível');
+INSERT INTO "DISTRIB_RiR" ("NrBilhete","Tipo","Dia","Status") VALUES ('25699204','Relvado','27jun','Disponível');
+INSERT INTO "DISTRIB_RiR" ("NrBilhete","Tipo","Dia","Status") VALUES ('25699205','Relvado','28jun','Disponível');
+INSERT INTO "DISTRIB_RiR" ("NrBilhete","Tipo","Dia","Status","AcaoParceiro") VALUES ('25691971','Rooftop','20jun','Disponível','Jornalista');
+INSERT INTO "DISTRIB_RiR" ("NrBilhete","Tipo","Dia","Status","AcaoParceiro") VALUES ('25691972','Rooftop','21jun','Disponível','Jornalista');
 
 -- ==================
--- 5. DADOS INICIAIS — DISTRIB_NosAlive
+-- 5. DISTRIB_NosAlive — seed
 -- ==================
 
-INSERT INTO "DISTRIB_NosAlive" ("NrBilhete","Tipo","Dia","Status") VALUES
-  ('25699201','Relvado','9jul','Disponível'),
-  ('25699202','Relvado','9jul','Disponível'),
-  ('25699203','Relvado','10jul','Disponível'),
-  ('25699204','Relvado','11jul','Disponível'),
-  ('25699205','Relvado','11jul','Disponível');
-
-INSERT INTO "DISTRIB_NosAlive" ("NrBilhete","Tipo","Dia","Status","AcaoParceiro") VALUES
-  ('25691971','Rooftop','9jul','Disponível','Jornalista'),
-  ('25691972','Rooftop','10jul','Disponível','Jornalista');
+INSERT INTO "DISTRIB_NosAlive" ("NrBilhete","Tipo","Dia","Status") VALUES ('25699201','Relvado','9jul','Disponível');
+INSERT INTO "DISTRIB_NosAlive" ("NrBilhete","Tipo","Dia","Status") VALUES ('25699202','Relvado','9jul','Disponível');
+INSERT INTO "DISTRIB_NosAlive" ("NrBilhete","Tipo","Dia","Status") VALUES ('25699203','Relvado','10jul','Disponível');
+INSERT INTO "DISTRIB_NosAlive" ("NrBilhete","Tipo","Dia","Status") VALUES ('25699204','Relvado','11jul','Disponível');
+INSERT INTO "DISTRIB_NosAlive" ("NrBilhete","Tipo","Dia","Status") VALUES ('25699205','Relvado','11jul','Disponível');
+INSERT INTO "DISTRIB_NosAlive" ("NrBilhete","Tipo","Dia","Status","AcaoParceiro") VALUES ('25691971','Rooftop','9jul','Disponível','Jornalista');
+INSERT INTO "DISTRIB_NosAlive" ("NrBilhete","Tipo","Dia","Status","AcaoParceiro") VALUES ('25691972','Rooftop','10jul','Disponível','Jornalista');
 
 -- ==================
--- 6. DADOS INICIAIS — BD_RiR
+-- 6. BD_RiR — seed
 -- ==================
 
-INSERT INTO "BD_RiR" ("Nome","Entidade","Tipo","STATUS","Dia_20jun") VALUES
-  ('Sérgio Ribeiro','Admin/Dire.','Rooftop','Por Enviar','Sim'),
-  ('Sérgio Ribeiro','Admin/Dire.','VIP','Enviado','Sim'),
-  ('Sérgio Ribeiro','Admin/Dire.','Relvado','Enviado','Sim');
+INSERT INTO "BD_RiR" ("Nome","Entidade","Tipo","STATUS","Dia_20jun") VALUES ('Sérgio Ribeiro','Admin/Dire.','Rooftop','Por Enviar','Sim');
+INSERT INTO "BD_RiR" ("Nome","Entidade","Tipo","STATUS","Dia_20jun") VALUES ('Sérgio Ribeiro','Admin/Dire.','VIP','Enviado','Sim');
+INSERT INTO "BD_RiR" ("Nome","Entidade","Tipo","STATUS","Dia_20jun") VALUES ('Sérgio Ribeiro','Admin/Dire.','Relvado','Enviado','Sim');
 
 -- ==================
--- 7. DADOS INICIAIS — BD_NosAlive
+-- 7. BD_NosAlive — seed
 -- ==================
 
-INSERT INTO "BD_NosAlive" ("Nome","Entidade","Tipo","STATUS","Dia_9jul") VALUES
-  ('Sérgio Ribeiro','Admin/Dire.','Relvado','Por Enviar','Sim'),
-  ('Ricardo Simões - RL','Admin/Dire.','Relvado','Por Enviar','Não'),
-  ('RL','Admin/Dire.','Relvado','Verificar','Não'),
-  ('Proteção ADM','Proteção','Relvado','Enviado','Não'),
-  ('Proteção HPT','Proteção','Relvado','Por Enviar','Não');
+INSERT INTO "BD_NosAlive" ("Nome","Entidade","Tipo","STATUS","Dia_9jul") VALUES ('Sérgio Ribeiro','Admin/Dire.','Relvado','Por Enviar','Sim');
+INSERT INTO "BD_NosAlive" ("Nome","Entidade","Tipo","STATUS")            VALUES ('Ricardo Simões - RL','Admin/Dire.','Relvado','Por Enviar');
+INSERT INTO "BD_NosAlive" ("Nome","Entidade","Tipo","STATUS")            VALUES ('RL','Admin/Dire.','Relvado','Verificar');
+INSERT INTO "BD_NosAlive" ("Nome","Entidade","Tipo","STATUS")            VALUES ('Proteção ADM','Proteção','Relvado','Enviado');
+INSERT INTO "BD_NosAlive" ("Nome","Entidade","Tipo","STATUS")            VALUES ('Proteção HPT','Proteção','Relvado','Por Enviar');

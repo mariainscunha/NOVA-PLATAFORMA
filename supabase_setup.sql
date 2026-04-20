@@ -86,22 +86,16 @@ CREATE POLICY "auth_all" ON "DISTRIB_NosAlive" FOR ALL TO authenticated USING (t
 -- 4. DADOS INICIAIS — DISTRIB_RiR
 -- ==================
 
-INSERT INTO "DISTRIB_RiR" ("NrBilhete","Tipo","Dia","Status") VALUES
-  ('25699116','VIP','20jun','Disponível'),
-  ('25699117','VIP','21jun','Disponível'),
-  ('25699118','VIP','27jun','Disponível'),
-  ('25699119','VIP','28jun','Disponível'),
-  ('25699201','Relvado','20jun','Disponível'),
-  ('25699202','Relvado','20jun','Disponível'),
-  ('25699203','Relvado','21jun','Disponível'),
-  ('25699204','Relvado','27jun','Disponível'),
-  ('25699205','Relvado','28jun','Disponível'),
-  ('25691971','Rooftop','20jun','Disponível','Jornalista'),
-  ('25691972','Rooftop','21jun','Disponível','Jornalista');
-
--- Fix: insert with AcaoParceiro
-DELETE FROM "DISTRIB_RiR" WHERE "NrBilhete" IN ('25691971','25691972');
 INSERT INTO "DISTRIB_RiR" ("NrBilhete","Tipo","Dia","Status","AcaoParceiro") VALUES
+  ('25699116','VIP','20jun','Disponível',NULL),
+  ('25699117','VIP','21jun','Disponível',NULL),
+  ('25699118','VIP','27jun','Disponível',NULL),
+  ('25699119','VIP','28jun','Disponível',NULL),
+  ('25699201','Relvado','20jun','Disponível',NULL),
+  ('25699202','Relvado','20jun','Disponível',NULL),
+  ('25699203','Relvado','21jun','Disponível',NULL),
+  ('25699204','Relvado','27jun','Disponível',NULL),
+  ('25699205','Relvado','28jun','Disponível',NULL),
   ('25691971','Rooftop','20jun','Disponível','Jornalista'),
   ('25691972','Rooftop','21jun','Disponível','Jornalista');
 

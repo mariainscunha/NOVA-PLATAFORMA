@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import {
   FESTIVALS, RIR_DAYS, NOSALIVE_DAYS, RIR_TIPOS, NOSALIVE_TIPOS,
-  STOCK_RIR, STOCK_NOSALIVE,
+  STOCK_RIR, STOCK_NOSALIVE, INCLUI_RELVADO,
 } from '../lib/constants'
 
 function barColor(pct) {
@@ -40,12 +40,18 @@ export default function StockView({ festival }) {
         dias.forEach(d => { counts[t][d] = 0 })
       })
 
+      const incluiRelvado = INCLUI_RELVADO[festival] || []
+
       ;(data || []).forEach(row => {
         if (row.STATUS === 'Verificar') return
         const qty = parseInt(row.Quantidade) || 1
         dias.forEach(d => {
           if (row[`Dia_${d}`] === 'Sim' && counts[row.Tipo]) {
             counts[row.Tipo][d] = (counts[row.Tipo][d] || 0) + qty
+            // também desconta no Relvado (ex: Rooftop NOS Alive, Slide RiR)
+            if (incluiRelvado.includes(row.Tipo) && counts['Relvado']) {
+              counts['Relvado'][d] = (counts['Relvado'][d] || 0) + qty
+            }
           }
         })
       })

@@ -33,7 +33,11 @@ export const ENTIDADES = [
   'Influencers', 'Fornecedores', 'Frotas', 'Internos GSC', 'Outros',
 ]
 
-export const STATUS_PEDIDO = ['Por Enviar', 'Enviado', 'Verificar']
+// Tipos que incluem bilhete Relvado e também consomem stock de Relvado
+export const INCLUI_RELVADO = {
+  RiR: ['Slide'],
+  NosAlive: ['Rooftop'],
+}
 export const STATUS_DISTRIB = ['Disponível', 'Atribuído', 'Enviado']
 
 export const STATUS_NEXT = {

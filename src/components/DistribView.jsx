@@ -100,19 +100,24 @@ export default function DistribView({ festival }) {
   useEffect(() => { load() }, [festival])
 
   useEffect(() => {
-    if (!form.Tipo || !form.Dia) return
+    if (!showForm) return
     async function fetchNomes() {
-      const diaCol = `Dia_${form.Dia}`
       const { data } = await supabase
         .from(bdTable)
         .select('Nome,Entidade')
-        .eq('Tipo', form.Tipo)
-        .eq(diaCol, 'Sim')
         .neq('STATUS', 'Verificar')
-      setNomeSuggestions((data || []).filter(r => r.Nome))
+      const unique = []
+      const seen = new Set()
+      for (const r of (data || [])) {
+        if (r.Nome && !seen.has(r.Nome)) {
+          seen.add(r.Nome)
+          unique.push(r)
+        }
+      }
+      setNomeSuggestions(unique)
     }
     fetchNomes()
-  }, [form.Tipo, form.Dia, festival])
+  }, [showForm, bdTable])
 
   function handleNomeChange(nome) {
     const match = nomeSuggestions.find(s => s.Nome === nome)

@@ -22,6 +22,7 @@ export default function PedidosView({ festival }) {
   const [loading, setLoading] = useState(true)
   const [filterStatus, setFilterStatus] = useState('')
   const [filterTipo, setFilterTipo] = useState('')
+  const [filterEntidade, setFilterEntidade] = useState('')
   const [search, setSearch] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ ...EMPTY_FORM, Tipo: tipos[0] })
@@ -40,6 +41,7 @@ export default function PedidosView({ festival }) {
   const filtered = rows.filter(r => {
     if (filterStatus && r.STATUS !== filterStatus) return false
     if (filterTipo && r.Tipo !== filterTipo) return false
+    if (filterEntidade && r.Entidade !== filterEntidade) return false
     if (search) {
       const q = search.toLowerCase()
       if (!r.Nome?.toLowerCase().includes(q) && !r.Entidade?.toLowerCase().includes(q)) return false
@@ -115,6 +117,11 @@ export default function PedidosView({ festival }) {
           className="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none">
           <option value="">Todos os tipos</option>
           {tipos.map(t => <option key={t}>{t}</option>)}
+        </select>
+        <select value={filterEntidade} onChange={e => setFilterEntidade(e.target.value)}
+          className="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none">
+          <option value="">Todas as entidades</option>
+          {ENTIDADES.map(e => <option key={e}>{e}</option>)}
         </select>
         <button onClick={openNew}
           className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition">

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { exportExcel } from '../lib/excel'
-import { FESTIVALS, RIR_DAYS, NOSALIVE_DAYS, RIR_TIPOS, NOSALIVE_TIPOS, ENVIADO_POR } from '../lib/constants'
+import { FESTIVALS, RIR_DAYS, NOSALIVE_DAYS, RIR_TIPOS, NOSALIVE_TIPOS, ENVIADO_POR, ENTIDADES } from '../lib/constants'
 
 const EMPTY_FORM = {
   NrBilhete: '', Tipo: 'Relvado', Dia: '', Status: 'Disponível',
@@ -90,6 +90,8 @@ export default function DistribView({ festival }) {
   const [saving, setSaving] = useState(false)
   const [nomeSuggestions, setNomeSuggestions] = useState([])
   const [filterDia, setFilterDia] = useState('')
+  const [filterTipo, setFilterTipo] = useState('')
+  const [filterEntidade, setFilterEntidade] = useState('')
 
   async function load() {
     setLoading(true)
@@ -228,9 +230,15 @@ export default function DistribView({ festival }) {
     return Object.values(map).filter(p => p.pedido > 0)
   })()
 
-  const disponíveis = rows.filter(r => r.Status === 'Disponível').filter(r => !filterDia || r.Dia === filterDia)
-  const atribuídos  = rows.filter(r => r.Status === 'Atribuído').filter(r => !filterDia || r.Dia === filterDia)
-  const enviados    = rows.filter(r => r.Status === 'Enviado').filter(r => !filterDia || r.Dia === filterDia)
+  function applyFilters(r) {
+    if (filterDia && r.Dia !== filterDia) return false
+    if (filterTipo && r.Tipo !== filterTipo) return false
+    if (filterEntidade && r.AcaoParceiro !== filterEntidade) return false
+    return true
+  }
+  const disponíveis = rows.filter(r => r.Status === 'Disponível').filter(applyFilters)
+  const atribuídos  = rows.filter(r => r.Status === 'Atribuído').filter(applyFilters)
+  const enviados    = rows.filter(r => r.Status === 'Enviado').filter(applyFilters)
 
   return (
     <div className="space-y-4">
@@ -239,6 +247,16 @@ export default function DistribView({ festival }) {
           className="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none">
           <option value="">Todos os dias</option>
           {dias.map(d => <option key={d}>{d}</option>)}
+        </select>
+        <select value={filterTipo} onChange={e => setFilterTipo(e.target.value)}
+          className="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none">
+          <option value="">Todos os tipos</option>
+          {tipos.map(t => <option key={t}>{t}</option>)}
+        </select>
+        <select value={filterEntidade} onChange={e => setFilterEntidade(e.target.value)}
+          className="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none">
+          <option value="">Todas as entidades</option>
+          {ENTIDADES.map(e => <option key={e}>{e}</option>)}
         </select>
         <button onClick={openNew}
           className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition">

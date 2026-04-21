@@ -16,9 +16,9 @@ export const NOSALIVE_TIPOS = ['Relvado', 'Rooftop']
 
 // Hardcoded stock negociado
 export const STOCK_RIR = {
-  Relvado: { '20jun': 125, '21jun': 98,  '27jun': 125, '28jun': 98  },
+  Relvado: { '20jun': 125, '21jun': 98,  '27jun': 125, '28jun': 117 },
   Rooftop: { '20jun': 200, '21jun': 200, '27jun': 200, '28jun': 200 },
-  VIP:     { '20jun': 34,  '21jun': 25,  '27jun': 34,  '28jun': 25  },
+  VIP:     { '20jun': 34,  '21jun': 25,  '27jun': 34,  '28jun': 31  },
   Slide:   { '20jun': 0,   '21jun': 0,   '27jun': 0,   '28jun': 0   },
 }
 

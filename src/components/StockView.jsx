@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import {
   FESTIVALS, RIR_DAYS, NOSALIVE_DAYS, RIR_TIPOS, NOSALIVE_TIPOS,
-  STOCK_RIR, STOCK_NOSALIVE,
+  STOCK_RIR, STOCK_NOSALIVE, INCLUI_RELVADO,
 } from '../lib/constants'
 
 function barColor(pct) {
@@ -26,6 +26,8 @@ export default function StockView({ festival }) {
 
   // All keys in stockNeg (includes 'Slide' for RiR)
   const tiposDisplay = Object.keys(stockNeg)
+
+  const incluiRelvado = INCLUI_RELVADO[festival] || []
 
   const [rawData, setRawData] = useState([])
   const [usado, setUsado] = useState({})
@@ -57,6 +59,10 @@ export default function StockView({ festival }) {
             if (counts[row.Tipo]) {
               counts[row.Tipo][d] = (counts[row.Tipo][d] || 0) + qty
             }
+            // Rooftop NOS Alive ocupa também um slot de Relvado
+            if (incluiRelvado.includes(row.Tipo) && counts['Relvado']) {
+              counts['Relvado'][d] = (counts['Relvado'][d] || 0) + qty
+            }
             if (isRiR && row.Slide === 'Sim' && counts['Slide']) {
               counts['Slide'][d] = (counts['Slide'][d] || 0) + qty
             }
@@ -79,10 +85,12 @@ export default function StockView({ festival }) {
       const qty = parseInt(row.Quantidade) || 1
       if (tipo === 'Slide') {
         if (row.Slide === 'Sim') {
-          rows.push({ nome: row.Nome || '(sem nome)', entidade: row.Entidade || '', tipo: row.Tipo, qty })
+          rows.push({ nome: row.Nome || '(sem nome)', entidade: row.Entidade || '', tipo: row.Tipo, qty, via: null })
         }
       } else if (row.Tipo === tipo) {
-        rows.push({ nome: row.Nome || '(sem nome)', entidade: row.Entidade || '', tipo: row.Tipo, qty })
+        rows.push({ nome: row.Nome || '(sem nome)', entidade: row.Entidade || '', tipo: row.Tipo, qty, via: null })
+      } else if (tipo === 'Relvado' && incluiRelvado.includes(row.Tipo)) {
+        rows.push({ nome: row.Nome || '(sem nome)', entidade: row.Entidade || '', tipo: row.Tipo, qty, via: row.Tipo })
       }
     })
     return rows
@@ -108,30 +116,42 @@ export default function StockView({ festival }) {
               if (!bRows.length) return <p className="text-slate-400 text-sm">Sem pedidos registados.</p>
               return (
                 <table className="w-full text-sm">
-                  <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
-                    <tr>
-                      <th className="px-3 py-2 text-left">Nome</th>
-                      <th className="px-3 py-2 text-left">Entidade</th>
-                      {active.tipo === 'Slide' && <th className="px-3 py-2 text-center">Tipo Bilhete</th>}
-                      <th className="px-3 py-2 text-center">Qtd</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {bRows.map((r, i) => (
-                      <tr key={i}>
-                        <td className="px-3 py-2 font-medium text-slate-800">{r.nome}</td>
-                        <td className="px-3 py-2 text-slate-500">{r.entidade}</td>
-                        {active.tipo === 'Slide' && <td className="px-3 py-2 text-center text-slate-600">{r.tipo}</td>}
-                        <td className="px-3 py-2 text-center font-semibold text-slate-700">{r.qty}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="bg-slate-50">
-                      <td colSpan={active.tipo === 'Slide' ? 3 : 2} className="px-3 py-2 text-right text-xs font-medium text-slate-600">Total</td>
-                      <td className="px-3 py-2 text-center font-bold text-slate-800">{bRows.reduce((s, r) => s + r.qty, 0)}</td>
-                    </tr>
-                  </tfoot>
+                  {(() => {
+                    const showTipo = active.tipo === 'Slide' || active.tipo === 'Relvado'
+                    return (
+                      <>
+                        <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
+                          <tr>
+                            <th className="px-3 py-2 text-left">Nome</th>
+                            <th className="px-3 py-2 text-left">Entidade</th>
+                            {showTipo && <th className="px-3 py-2 text-center">Tipo</th>}
+                            <th className="px-3 py-2 text-center">Qtd</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {bRows.map((r, i) => (
+                            <tr key={i} className={r.via ? 'bg-amber-50' : ''}>
+                              <td className="px-3 py-2 font-medium text-slate-800">{r.nome}</td>
+                              <td className="px-3 py-2 text-slate-500">{r.entidade}</td>
+                              {showTipo && (
+                                <td className="px-3 py-2 text-center text-slate-600">
+                                  {r.tipo}
+                                  {r.via && <span className="ml-1 text-xs text-amber-600">(+Relvado)</span>}
+                                </td>
+                              )}
+                              <td className="px-3 py-2 text-center font-semibold text-slate-700">{r.qty}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                        <tfoot>
+                          <tr className="bg-slate-50">
+                            <td colSpan={showTipo ? 3 : 2} className="px-3 py-2 text-right text-xs font-medium text-slate-600">Total</td>
+                            <td className="px-3 py-2 text-center font-bold text-slate-800">{bRows.reduce((s, r) => s + r.qty, 0)}</td>
+                          </tr>
+                        </tfoot>
+                      </>
+                    )
+                  })()}
                 </table>
               )
             })()}

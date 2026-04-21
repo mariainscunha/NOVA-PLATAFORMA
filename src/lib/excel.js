@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx'
-import { STOCK_RIR, STOCK_NOSALIVE, RIR_DAYS, NOSALIVE_DAYS, RIR_TIPOS, NOSALIVE_TIPOS } from './constants'
+import { STOCK_RIR, STOCK_NOSALIVE, RIR_DAYS, NOSALIVE_DAYS, RIR_TIPOS, NOSALIVE_TIPOS, INCLUI_RELVADO } from './constants'
 
 const HIDDEN_COLS = ['id', 'created_at']
 
@@ -30,6 +30,7 @@ function stockSheet(festival, pedidos) {
   const stockNeg = isRiR ? STOCK_RIR : STOCK_NOSALIVE
   const tiposDisplay = Object.keys(stockNeg)
 
+  const incluiRelvado = INCLUI_RELVADO[festival] || []
   const used = {}
   tiposDisplay.forEach(t => { used[t] = {}; dias.forEach(d => { used[t][d] = 0 }) })
   pedidos.forEach(row => {
@@ -39,6 +40,9 @@ function stockSheet(festival, pedidos) {
       if (row[`Dia_${d}`] === 'Sim') {
         if (used[row.Tipo]) {
           used[row.Tipo][d] = (used[row.Tipo][d] || 0) + qty
+        }
+        if (incluiRelvado.includes(row.Tipo) && used['Relvado']) {
+          used['Relvado'][d] = (used['Relvado'][d] || 0) + qty
         }
         if (isRiR && row.Slide === 'Sim' && used['Slide']) {
           used['Slide'][d] = (used['Slide'][d] || 0) + qty

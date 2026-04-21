@@ -38,7 +38,7 @@ export const ENTIDADES = [
 // Tipos que incluem bilhete Relvado e também consomem stock de Relvado
 export const INCLUI_RELVADO = {
   RiR: [],
-  NosAlive: [],
+  NosAlive: ['Rooftop'],
 }
 export const STATUS_DISTRIB = ['Disponível', 'Atribuído', 'Enviado']
 

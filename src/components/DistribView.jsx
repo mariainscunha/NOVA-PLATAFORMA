@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { exportExcel } from '../lib/excel'
 import { FESTIVALS, RIR_DAYS, NOSALIVE_DAYS, RIR_TIPOS, NOSALIVE_TIPOS } from '../lib/constants'
@@ -6,6 +6,72 @@ import { FESTIVALS, RIR_DAYS, NOSALIVE_DAYS, RIR_TIPOS, NOSALIVE_TIPOS } from '.
 const EMPTY_FORM = {
   NrBilhete: '', Tipo: 'Relvado', Dia: '', Status: 'Disponível',
   Nome: '', Email: '', Telefone: '', AcaoParceiro: '',
+}
+
+function NomeAutocomplete({ value, onChange, suggestions }) {
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState(value)
+  const ref = useRef(null)
+
+  useEffect(() => { setQuery(value) }, [value])
+
+  useEffect(() => {
+    function handleClick(e) {
+      if (!ref.current?.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  const filtered = query
+    ? suggestions.filter(s => s.Nome.toLowerCase().includes(query.toLowerCase()))
+    : suggestions
+
+  function select(nome) {
+    setQuery(nome)
+    setOpen(false)
+    onChange(nome)
+  }
+
+  function handleInput(e) {
+    const v = e.target.value
+    setQuery(v)
+    setOpen(true)
+    onChange(v)
+  }
+
+  return (
+    <div ref={ref} className="relative">
+      <input
+        type="text"
+        value={query}
+        onChange={handleInput}
+        onFocus={() => setOpen(true)}
+        className="input"
+        placeholder="Escreve para filtrar..."
+        autoComplete="off"
+      />
+      {open && filtered.length > 0 && (
+        <ul className="absolute z-50 w-full bg-white border border-slate-200 rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
+          {filtered.map(s => (
+            <li
+              key={s.Nome}
+              onMouseDown={() => select(s.Nome)}
+              className="px-3 py-2 text-sm cursor-pointer hover:bg-blue-50 flex justify-between items-center"
+            >
+              <span className="font-medium text-slate-800">{s.Nome}</span>
+              {s.Entidade && <span className="text-xs text-slate-400 ml-2">{s.Entidade}</span>}
+            </li>
+          ))}
+        </ul>
+      )}
+      {open && filtered.length === 0 && query && (
+        <div className="absolute z-50 w-full bg-white border border-slate-200 rounded-lg shadow-lg mt-1 px-3 py-2 text-sm text-slate-400">
+          Sem resultados
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default function DistribView({ festival }) {
@@ -33,7 +99,6 @@ export default function DistribView({ festival }) {
 
   useEffect(() => { load() }, [festival])
 
-  // Fetch name suggestions + entidade when Tipo/Dia changes
   useEffect(() => {
     if (!form.Tipo || !form.Dia) return
     async function fetchNomes() {
@@ -49,8 +114,7 @@ export default function DistribView({ festival }) {
     fetchNomes()
   }, [form.Tipo, form.Dia, festival])
 
-  // Auto-fill AcaoParceiro from Entidade when Nome is selected
-  async function handleNomeChange(nome) {
+  function handleNomeChange(nome) {
     const match = nomeSuggestions.find(s => s.Nome === nome)
     setForm(f => ({
       ...f,
@@ -65,13 +129,9 @@ export default function DistribView({ festival }) {
     if (row.Nome) {
       const diaCol = `Dia_${row.Dia}`
       const { data: bd } = await supabase
-        .from(bdTable)
-        .select('id')
-        .eq('Nome', row.Nome)
-        .eq('Tipo', row.Tipo)
-        .eq(diaCol, 'Sim')
-        .neq('STATUS', 'Verificar')
-        .limit(1)
+        .from(bdTable).select('id')
+        .eq('Nome', row.Nome).eq('Tipo', row.Tipo)
+        .eq(diaCol, 'Sim').neq('STATUS', 'Verificar').limit(1)
       if (bd?.length) {
         await supabase.from(bdTable).update({ STATUS: 'Enviado' }).eq('id', bd[0].id)
       }
@@ -104,7 +164,6 @@ export default function DistribView({ festival }) {
     e.preventDefault()
     setSaving(true)
     const payload = { ...form }
-    // enforce status rules
     if (!payload.Nome) {
       payload.Status = 'Disponível'
     } else if (payload.Status === 'Disponível') {
@@ -112,7 +171,6 @@ export default function DistribView({ festival }) {
     }
     if (editId) {
       await supabase.from(table).update(payload).eq('id', editId)
-      // sync BD if marked Enviado
       if (payload.Status === 'Enviado' && payload.Nome) {
         const diaCol = `Dia_${payload.Dia}`
         const { data: bd } = await supabase
@@ -140,12 +198,9 @@ export default function DistribView({ festival }) {
     exportExcel(festival, bdData || [], rows)
   }
 
-  const disponíveis = rows.filter(r => r.Status === 'Disponível')
-    .filter(r => !filterDia || r.Dia === filterDia)
-  const atribuídos = rows.filter(r => r.Status === 'Atribuído')
-    .filter(r => !filterDia || r.Dia === filterDia)
-  const enviados = rows.filter(r => r.Status === 'Enviado')
-    .filter(r => !filterDia || r.Dia === filterDia)
+  const disponíveis = rows.filter(r => r.Status === 'Disponível').filter(r => !filterDia || r.Dia === filterDia)
+  const atribuídos  = rows.filter(r => r.Status === 'Atribuído').filter(r => !filterDia || r.Dia === filterDia)
+  const enviados    = rows.filter(r => r.Status === 'Enviado').filter(r => !filterDia || r.Dia === filterDia)
 
   return (
     <div className="space-y-4">
@@ -206,7 +261,8 @@ export default function DistribView({ festival }) {
             </div>
             <form onSubmit={saveForm} className="space-y-3">
               <Field label="Nº Bilhete">
-                <input required value={form.NrBilhete} onChange={e => setForm(f => ({ ...f, NrBilhete: e.target.value }))}
+                <input required value={form.NrBilhete}
+                  onChange={e => setForm(f => ({ ...f, NrBilhete: e.target.value }))}
                   className="input" />
               </Field>
               <div className="grid grid-cols-2 gap-3">
@@ -225,38 +281,33 @@ export default function DistribView({ festival }) {
               </div>
 
               <Field label="Nome">
-                <div className="space-y-1">
-                  <input
-                    list="nomes-list"
-                    value={form.Nome}
-                    onChange={e => handleNomeChange(e.target.value)}
-                    className="input"
-                    placeholder="Nome ou deixar vazio (fica Disponível)"
-                  />
-                  <datalist id="nomes-list">
-                    {nomeSuggestions.map(n => <option key={n.Nome} value={n.Nome} />)}
-                  </datalist>
+                <NomeAutocomplete
+                  value={form.Nome}
+                  onChange={handleNomeChange}
+                  suggestions={nomeSuggestions}
+                />
+                <div className="text-xs mt-1">
                   {form.Nome
-                    ? <div className="text-xs text-amber-600">→ Status: Atribuído</div>
-                    : <div className="text-xs text-slate-400">→ Status: Disponível</div>}
+                    ? <span className="text-amber-600">→ Atribuído</span>
+                    : <span className="text-slate-400">→ Deixar vazio = Disponível</span>}
                 </div>
               </Field>
 
-              <Field label="Ação Parceiro (Entidade)">
-                <input
-                  value={form.AcaoParceiro}
+              <Field label="Entidade (Ação Parceiro)">
+                <input value={form.AcaoParceiro}
                   onChange={e => setForm(f => ({ ...f, AcaoParceiro: e.target.value }))}
                   className="input"
-                  placeholder="Preenchido automaticamente pelo nome"
-                />
+                  placeholder="Preenchido automaticamente" />
               </Field>
 
               <Field label="Email">
-                <input type="email" value={form.Email} onChange={e => setForm(f => ({ ...f, Email: e.target.value }))}
+                <input type="email" value={form.Email}
+                  onChange={e => setForm(f => ({ ...f, Email: e.target.value }))}
                   className="input" />
               </Field>
               <Field label="Telefone">
-                <input value={form.Telefone} onChange={e => setForm(f => ({ ...f, Telefone: e.target.value }))}
+                <input value={form.Telefone}
+                  onChange={e => setForm(f => ({ ...f, Telefone: e.target.value }))}
                   className="input" />
               </Field>
 

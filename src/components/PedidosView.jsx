@@ -8,7 +8,7 @@ import {
 
 const EMPTY_FORM = {
   STATUS: 'Por Enviar', EnviadoPor: '', Entidade: 'BYD Portugal',
-  Nome: '', Tipo: 'Relvado', Email: '', Observacoes: '', Quantidade: 1,
+  Nome: '', Tipo: 'Relvado', Email: '', Observacoes: '', Quantidade: 1, Slide: 'Não',
 }
 
 export default function PedidosView({ festival }) {
@@ -66,6 +66,7 @@ export default function PedidosView({ festival }) {
     const f = { ...EMPTY_FORM }
     Object.keys(EMPTY_FORM).forEach(k => { f[k] = row[k] ?? EMPTY_FORM[k] })
     dias.forEach(d => { f[`Dia_${d}`] = row[`Dia_${d}`] ?? 'Não' })
+    f.Slide = row.Slide ?? 'Não'
     setForm(f)
     setShowForm(true)
   }
@@ -75,6 +76,7 @@ export default function PedidosView({ festival }) {
     setSaving(true)
     const payload = { ...form, Quantidade: parseInt(form.Quantidade) || 1 }
     dias.forEach(d => { payload[`Dia_${d}`] = form[`Dia_${d}`] === 'Sim' ? 'Sim' : 'Não' })
+    if (!isRiR) delete payload.Slide
     if (editId) {
       await supabase.from(table).update(payload).eq('id', editId)
     } else {
@@ -147,6 +149,7 @@ export default function PedidosView({ festival }) {
                 <th className="px-4 py-3 text-left">Tipo</th>
                 <th className="px-4 py-3 text-center">Qtd</th>
                 {dias.map(d => <th key={d} className="px-2 py-3 text-center">{d}</th>)}
+                {isRiR && <th className="px-2 py-3 text-center">Slide</th>}
                 <th className="px-4 py-3 text-left">Status</th>
                 <th className="px-4 py-3 text-left">Ações</th>
               </tr>
@@ -165,6 +168,13 @@ export default function PedidosView({ festival }) {
                         : <span className="text-slate-300">–</span>}
                     </td>
                   ))}
+                  {isRiR && (
+                    <td className="px-2 py-3 text-center">
+                      {row.Slide === 'Sim'
+                        ? <span className="text-blue-600 font-bold">✓</span>
+                        : <span className="text-slate-300">–</span>}
+                    </td>
+                  )}
                   <td className="px-4 py-3">
                     <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[row.STATUS]}`}>
                       {row.STATUS}
@@ -251,6 +261,17 @@ export default function PedidosView({ festival }) {
                   ))}
                 </div>
               </div>
+              {isRiR && (
+                <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={form.Slide === 'Sim'}
+                    onChange={e => setForm(f => ({ ...f, Slide: e.target.checked ? 'Sim' : 'Não' }))}
+                    className="rounded"
+                  />
+                  <span className="font-medium text-slate-700">Inclui experiência Slide</span>
+                </label>
+              )}
               <Field label="Observações">
                 <textarea value={form.Observacoes} onChange={e => setForm(f => ({ ...f, Observacoes: e.target.value }))}
                   rows={2} className="input" />

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import {
   FESTIVALS, RIR_DAYS, NOSALIVE_DAYS, RIR_TIPOS, NOSALIVE_TIPOS,
-  STOCK_RIR, STOCK_NOSALIVE, INCLUI_RELVADO,
+  STOCK_RIR, STOCK_NOSALIVE,
 } from '../lib/constants'
 
 function barColor(pct) {
@@ -23,22 +23,25 @@ export default function StockView({ festival }) {
   const tipos = isRiR ? RIR_TIPOS : NOSALIVE_TIPOS
   const stockNeg = isRiR ? STOCK_RIR : STOCK_NOSALIVE
   const table = isRiR ? 'BD_RiR' : 'BD_NosAlive'
-  const incluiRelvado = INCLUI_RELVADO[festival] || []
+
+  // All keys in stockNeg (includes 'Slide' for RiR)
+  const tiposDisplay = Object.keys(stockNeg)
 
   const [rawData, setRawData] = useState([])
   const [usado, setUsado] = useState({})
   const [loading, setLoading] = useState(true)
-  const [breakdown, setBreakdown] = useState(null) // { tipo, dia }
+  const [breakdown, setBreakdown] = useState(null)
 
   useEffect(() => {
     async function load() {
       setLoading(true)
+      const slideCol = isRiR ? ',Slide' : ''
       const { data } = await supabase
         .from(table)
-        .select('Tipo,' + dias.map(d => `Dia_${d}`).join(',') + ',STATUS,Quantidade,Nome,Entidade')
+        .select('Tipo' + slideCol + ',' + dias.map(d => `Dia_${d}`).join(',') + ',STATUS,Quantidade,Nome,Entidade')
 
       const counts = {}
-      tipos.forEach(t => {
+      tiposDisplay.forEach(t => {
         counts[t] = {}
         dias.forEach(d => { counts[t][d] = 0 })
       })
@@ -47,10 +50,12 @@ export default function StockView({ festival }) {
         if (row.STATUS === 'Verificar') return
         const qty = parseInt(row.Quantidade) || 1
         dias.forEach(d => {
-          if (row[`Dia_${d}`] === 'Sim' && counts[row.Tipo]) {
-            counts[row.Tipo][d] = (counts[row.Tipo][d] || 0) + qty
-            if (incluiRelvado.includes(row.Tipo) && counts['Relvado']) {
-              counts['Relvado'][d] = (counts['Relvado'][d] || 0) + qty
+          if (row[`Dia_${d}`] === 'Sim') {
+            if (counts[row.Tipo]) {
+              counts[row.Tipo][d] = (counts[row.Tipo][d] || 0) + qty
+            }
+            if (isRiR && row.Slide === 'Sim' && counts['Slide']) {
+              counts['Slide'][d] = (counts['Slide'][d] || 0) + qty
             }
           }
         })
@@ -69,11 +74,12 @@ export default function StockView({ festival }) {
       if (row.STATUS === 'Verificar') return
       if (row[`Dia_${dia}`] !== 'Sim') return
       const qty = parseInt(row.Quantidade) || 1
-
-      if (row.Tipo === tipo) {
-        rows.push({ nome: row.Nome || '(sem nome)', entidade: row.Entidade || '', tipo: row.Tipo, qty, via: null })
-      } else if (tipo === 'Relvado' && incluiRelvado.includes(row.Tipo)) {
-        rows.push({ nome: row.Nome || '(sem nome)', entidade: row.Entidade || '', tipo: row.Tipo, qty, via: row.Tipo })
+      if (tipo === 'Slide') {
+        if (row.Slide === 'Sim') {
+          rows.push({ nome: row.Nome || '(sem nome)', entidade: row.Entidade || '', tipo: row.Tipo, qty })
+        }
+      } else if (row.Tipo === tipo) {
+        rows.push({ nome: row.Nome || '(sem nome)', entidade: row.Entidade || '', tipo: row.Tipo, qty })
       }
     })
     return rows
@@ -103,26 +109,23 @@ export default function StockView({ festival }) {
                     <tr>
                       <th className="px-3 py-2 text-left">Nome</th>
                       <th className="px-3 py-2 text-left">Entidade</th>
-                      <th className="px-3 py-2 text-center">Tipo</th>
+                      {active.tipo === 'Slide' && <th className="px-3 py-2 text-center">Tipo Bilhete</th>}
                       <th className="px-3 py-2 text-center">Qtd</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {bRows.map((r, i) => (
-                      <tr key={i} className={r.via ? 'bg-amber-50' : ''}>
+                      <tr key={i}>
                         <td className="px-3 py-2 font-medium text-slate-800">{r.nome}</td>
                         <td className="px-3 py-2 text-slate-500">{r.entidade}</td>
-                        <td className="px-3 py-2 text-center text-slate-600">
-                          {r.tipo}
-                          {r.via && <span className="ml-1 text-xs text-amber-600">(via {r.via})</span>}
-                        </td>
+                        {active.tipo === 'Slide' && <td className="px-3 py-2 text-center text-slate-600">{r.tipo}</td>}
                         <td className="px-3 py-2 text-center font-semibold text-slate-700">{r.qty}</td>
                       </tr>
                     ))}
                   </tbody>
                   <tfoot>
                     <tr className="bg-slate-50">
-                      <td colSpan={3} className="px-3 py-2 text-right text-xs font-medium text-slate-600">Total</td>
+                      <td colSpan={active.tipo === 'Slide' ? 3 : 2} className="px-3 py-2 text-right text-xs font-medium text-slate-600">Total</td>
                       <td className="px-3 py-2 text-center font-bold text-slate-800">{bRows.reduce((s, r) => s + r.qty, 0)}</td>
                     </tr>
                   </tfoot>
@@ -133,9 +136,12 @@ export default function StockView({ festival }) {
         </div>
       )}
 
-      {tipos.map(tipo => (
+      {tiposDisplay.map(tipo => (
         <div key={tipo} className="bg-white rounded-2xl shadow-sm p-6">
-          <h2 className="text-lg font-semibold text-slate-800 mb-4">{tipo}</h2>
+          <h2 className="text-lg font-semibold text-slate-800 mb-4">
+            {tipo}
+            {tipo === 'Slide' && <span className="ml-2 text-xs font-normal text-slate-400">(experiência adicional)</span>}
+          </h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {dias.map(dia => {
               const neg = stockNeg[tipo]?.[dia] ?? 0
@@ -153,7 +159,7 @@ export default function StockView({ festival }) {
                   {neg === 0 ? (
                     <>
                       <div className="text-lg font-bold mb-1 text-slate-400">A definir</div>
-                      <div className="text-xs text-slate-400 mb-2">{used} usados</div>
+                      <div className="text-xs text-slate-400 mb-2">{used} com Slide</div>
                       <div className="w-full bg-slate-100 rounded-full h-2" />
                     </>
                   ) : (

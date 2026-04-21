@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx'
-import { STOCK_RIR, STOCK_NOSALIVE, RIR_DAYS, NOSALIVE_DAYS, RIR_TIPOS, NOSALIVE_TIPOS, INCLUI_RELVADO } from './constants'
+import { STOCK_RIR, STOCK_NOSALIVE, RIR_DAYS, NOSALIVE_DAYS, RIR_TIPOS, NOSALIVE_TIPOS } from './constants'
 
 const HIDDEN_COLS = ['id', 'created_at']
 
@@ -28,25 +28,27 @@ function stockSheet(festival, pedidos) {
   const dias = isRiR ? RIR_DAYS : NOSALIVE_DAYS
   const tipos = isRiR ? RIR_TIPOS : NOSALIVE_TIPOS
   const stockNeg = isRiR ? STOCK_RIR : STOCK_NOSALIVE
+  const tiposDisplay = Object.keys(stockNeg)
 
   const used = {}
-  tipos.forEach(t => { used[t] = {}; dias.forEach(d => { used[t][d] = 0 }) })
-  const incluiRelvado = INCLUI_RELVADO[festival] || []
+  tiposDisplay.forEach(t => { used[t] = {}; dias.forEach(d => { used[t][d] = 0 }) })
   pedidos.forEach(row => {
     if (row.STATUS === 'Verificar') return
     const qty = parseInt(row.Quantidade) || 1
     dias.forEach(d => {
-      if (row[`Dia_${d}`] === 'Sim' && used[row.Tipo]) {
-        used[row.Tipo][d] = (used[row.Tipo][d] || 0) + qty
-        if (incluiRelvado.includes(row.Tipo) && used['Relvado']) {
-          used['Relvado'][d] = (used['Relvado'][d] || 0) + qty
+      if (row[`Dia_${d}`] === 'Sim') {
+        if (used[row.Tipo]) {
+          used[row.Tipo][d] = (used[row.Tipo][d] || 0) + qty
+        }
+        if (isRiR && row.Slide === 'Sim' && used['Slide']) {
+          used['Slide'][d] = (used['Slide'][d] || 0) + qty
         }
       }
     })
   })
 
   const rows = []
-  tipos.forEach(tipo => {
+  tiposDisplay.forEach(tipo => {
     dias.forEach(dia => {
       const neg = stockNeg[tipo]?.[dia] ?? 0
       const usedN = used[tipo]?.[dia] ?? 0

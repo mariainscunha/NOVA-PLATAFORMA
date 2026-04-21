@@ -35,10 +35,13 @@ export default function StockView({ festival }) {
   useEffect(() => {
     async function load() {
       setLoading(true)
-      const slideCol = isRiR ? ',Slide' : ''
-      const { data } = await supabase
-        .from(table)
-        .select('Tipo' + slideCol + ',' + dias.map(d => `Dia_${d}`).join(',') + ',STATUS,Quantidade,Nome,Entidade')
+      const baseSelect = 'Tipo,' + dias.map(d => `Dia_${d}`).join(',') + ',STATUS,Quantidade,Nome,Entidade'
+      let { data, error } = await supabase.from(table).select(baseSelect + (isRiR ? ',Slide' : ''))
+      if (error) {
+        // Slide column may not exist yet — retry without it
+        const res = await supabase.from(table).select(baseSelect)
+        data = res.data
+      }
 
       const counts = {}
       tiposDisplay.forEach(t => {

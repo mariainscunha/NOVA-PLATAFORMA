@@ -27,6 +27,8 @@ export const STOCK_NOSALIVE = {
   Rooftop: { '9jul': 40,  '10jul': 40,  '11jul': 45  },
 }
 
+export const ENVIADO_POR = ['', 'Miriam', 'Ana', 'Inês']
+
 export const ENTIDADES = [
   'Admin/Dire.', 'BYD Portugal', 'Rede BYD', 'Cliente BYD',
   'Proteção', 'Jornalistas', 'Parceiros', 'Embaixadores',

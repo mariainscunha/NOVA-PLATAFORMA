@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { exportExcel } from '../lib/excel'
 import {
   FESTIVALS, RIR_DAYS, NOSALIVE_DAYS, RIR_TIPOS, NOSALIVE_TIPOS,
-  ENTIDADES, STATUS_COLORS, STATUS_NEXT,
+  ENTIDADES, ENVIADO_POR, STATUS_COLORS, STATUS_NEXT,
 } from '../lib/constants'
 
 const EMPTY_FORM = {
@@ -217,8 +217,10 @@ export default function PedidosView({ festival }) {
                   className="input" />
               </Field>
               <Field label="Enviado Por">
-                <input value={form.EnviadoPor} onChange={e => setForm(f => ({ ...f, EnviadoPor: e.target.value }))}
-                  className="input" />
+                <select value={form.EnviadoPor} onChange={e => setForm(f => ({ ...f, EnviadoPor: e.target.value }))}
+                  className="input">
+                  {ENVIADO_POR.map(p => <option key={p} value={p}>{p || '— selecionar —'}</option>)}
+                </select>
               </Field>
               <Field label="Status">
                 <select value={form.STATUS} onChange={e => setForm(f => ({ ...f, STATUS: e.target.value }))}

@@ -29,7 +29,7 @@ export const STOCK_NOSALIVE = {
 export const ENTIDADES = [
   'Admin/Dire.', 'BYD Portugal', 'Rede BYD', 'Cliente BYD',
   'Proteção', 'Jornalistas', 'Parceiros', 'Embaixadores',
-  'Influencers', 'Fornecedores', 'Frotas', 'ACAP', 'CETELEM', 'Outros',
+  'Influencers', 'Fornecedores', 'Frotas', 'Internos GSC', 'Outros',
 ]
 
 export const STATUS_PEDIDO = ['Por Enviar', 'Enviado', 'Verificar']

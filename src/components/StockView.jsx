@@ -32,7 +32,7 @@ export default function StockView({ festival }) {
       setLoading(true)
       const { data } = await supabase
         .from(table)
-        .select('Tipo,' + dias.map(d => `Dia_${d}`).join(',') + ',STATUS')
+        .select('Tipo,' + dias.map(d => `Dia_${d}`).join(',') + ',STATUS,Quantidade')
 
       const counts = {}
       tipos.forEach(t => {
@@ -42,9 +42,10 @@ export default function StockView({ festival }) {
 
       ;(data || []).forEach(row => {
         if (row.STATUS === 'Verificar') return
+        const qty = parseInt(row.Quantidade) || 1
         dias.forEach(d => {
           if (row[`Dia_${d}`] === 'Sim' && counts[row.Tipo]) {
-            counts[row.Tipo][d] = (counts[row.Tipo][d] || 0) + 1
+            counts[row.Tipo][d] = (counts[row.Tipo][d] || 0) + qty
           }
         })
       })

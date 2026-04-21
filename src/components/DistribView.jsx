@@ -22,7 +22,6 @@ export default function DistribView({ festival }) {
   const [editId, setEditId] = useState(null)
   const [saving, setSaving] = useState(false)
   const [nomeSuggestions, setNomeSuggestions] = useState([])
-  const [filterSec, setFilterSec] = useState('')
   const [filterDia, setFilterDia] = useState('')
 
   async function load() {
@@ -34,45 +33,36 @@ export default function DistribView({ festival }) {
 
   useEffect(() => { load() }, [festival])
 
-  // fetch name suggestions when Tipo/Dia changes in form
+  // Fetch name suggestions + entidade when Tipo/Dia changes
   useEffect(() => {
     if (!form.Tipo || !form.Dia) return
     async function fetchNomes() {
       const diaCol = `Dia_${form.Dia}`
       const { data } = await supabase
         .from(bdTable)
-        .select('Nome')
+        .select('Nome,Entidade')
         .eq('Tipo', form.Tipo)
         .eq(diaCol, 'Sim')
         .neq('STATUS', 'Verificar')
-      setNomeSuggestions((data || []).map(r => r.Nome).filter(Boolean))
+      setNomeSuggestions((data || []).filter(r => r.Nome))
     }
     fetchNomes()
   }, [form.Tipo, form.Dia, festival])
 
-  async function marcarEnviado(row) {
-    await supabase.from(table).update({ Status: 'Enviado' }).eq('id', row.id)
-    // sync BD
-    if (row.Nome) {
-      const diaCol = `Dia_${row.Dia}`
-      const { data: bd } = await supabase
-        .from(bdTable)
-        .select('id')
-        .eq('Nome', row.Nome)
-        .eq('Tipo', row.Tipo)
-        .eq(diaCol, 'Sim')
-        .neq('STATUS', 'Verificar')
-        .limit(1)
-      if (bd?.length) {
-        await supabase.from(bdTable).update({ STATUS: 'Enviado' }).eq('id', bd[0].id)
-      }
-    }
-    load()
+  // Auto-fill AcaoParceiro from Entidade when Nome is selected
+  async function handleNomeChange(nome) {
+    const match = nomeSuggestions.find(s => s.Nome === nome)
+    setForm(f => ({
+      ...f,
+      Nome: nome,
+      AcaoParceiro: match ? (match.Entidade || '') : f.AcaoParceiro,
+      Status: nome ? (f.Status === 'Disponível' ? 'Atribuído' : f.Status) : 'Disponível',
+    }))
   }
 
-  async function updateStatus(row, newStatus) {
-    await supabase.from(table).update({ Status: newStatus }).eq('id', row.id)
-    if (newStatus === 'Enviado' && row.Nome) {
+  async function marcarEnviado(row) {
+    await supabase.from(table).update({ Status: 'Enviado' }).eq('id', row.id)
+    if (row.Nome) {
       const diaCol = `Dia_${row.Dia}`
       const { data: bd } = await supabase
         .from(bdTable)
@@ -114,13 +104,23 @@ export default function DistribView({ festival }) {
     e.preventDefault()
     setSaving(true)
     const payload = { ...form }
-    // auto-set status when nome assigned
-    if (payload.Nome && payload.Status === 'Disponível') {
+    // enforce status rules
+    if (!payload.Nome) {
+      payload.Status = 'Disponível'
+    } else if (payload.Status === 'Disponível') {
       payload.Status = 'Atribuído'
     }
-    if (!payload.Nome) payload.Status = 'Disponível'
     if (editId) {
       await supabase.from(table).update(payload).eq('id', editId)
+      // sync BD if marked Enviado
+      if (payload.Status === 'Enviado' && payload.Nome) {
+        const diaCol = `Dia_${payload.Dia}`
+        const { data: bd } = await supabase
+          .from(bdTable).select('id')
+          .eq('Nome', payload.Nome).eq('Tipo', payload.Tipo)
+          .eq(diaCol, 'Sim').neq('STATUS', 'Verificar').limit(1)
+        if (bd?.length) await supabase.from(bdTable).update({ STATUS: 'Enviado' }).eq('id', bd[0].id)
+      }
     } else {
       await supabase.from(table).insert(payload)
     }
@@ -140,7 +140,7 @@ export default function DistribView({ festival }) {
     exportExcel(festival, bdData || [], rows)
   }
 
-  const disponíveis = rows.filter(r => r.Status === 'Disponível' || (!r.Nome && r.Status !== 'Atribuído' && r.Status !== 'Enviado'))
+  const disponíveis = rows.filter(r => r.Status === 'Disponível')
     .filter(r => !filterDia || r.Dia === filterDia)
   const atribuídos = rows.filter(r => r.Status === 'Atribuído')
     .filter(r => !filterDia || r.Dia === filterDia)
@@ -170,7 +170,7 @@ export default function DistribView({ festival }) {
       ) : (
         <>
           <Section title="Não Alocados" count={disponíveis.length} color="text-slate-600">
-            <DistribTable rows={disponíveis} dias={dias} tipos={tipos}
+            <DistribTable rows={disponíveis}
               cols={['Dia', 'NrBilhete', 'Tipo', 'AcaoParceiro']}
               onEdit={openEdit} onDelete={deleteRow}
               renderActions={row => (
@@ -179,8 +179,8 @@ export default function DistribView({ festival }) {
           </Section>
 
           <Section title="Alocados — Por Enviar" count={atribuídos.length} color="text-amber-600">
-            <DistribTable rows={atribuídos} dias={dias} tipos={tipos}
-              cols={['Dia', 'NrBilhete', 'Tipo', 'Nome', 'Email']}
+            <DistribTable rows={atribuídos}
+              cols={['Dia', 'NrBilhete', 'Tipo', 'Nome', 'AcaoParceiro', 'Email']}
               onEdit={openEdit} onDelete={deleteRow}
               renderActions={row => (
                 <button onClick={() => marcarEnviado(row)}
@@ -191,8 +191,8 @@ export default function DistribView({ festival }) {
           </Section>
 
           <Section title="Enviados" count={enviados.length} color="text-green-600">
-            <DistribTable rows={enviados} dias={dias} tipos={tipos}
-              cols={['Dia', 'NrBilhete', 'Tipo', 'Nome', 'Email']}
+            <DistribTable rows={enviados}
+              cols={['Dia', 'NrBilhete', 'Tipo', 'Nome', 'AcaoParceiro', 'Email']}
               onEdit={openEdit} onDelete={deleteRow} />
           </Section>
         </>
@@ -209,30 +209,48 @@ export default function DistribView({ festival }) {
                 <input required value={form.NrBilhete} onChange={e => setForm(f => ({ ...f, NrBilhete: e.target.value }))}
                   className="input" />
               </Field>
-              <Field label="Tipo">
-                <select value={form.Tipo} onChange={e => setForm(f => ({ ...f, Tipo: e.target.value }))}
-                  className="input">
-                  {tipos.map(t => <option key={t}>{t}</option>)}
-                </select>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Tipo">
+                  <select value={form.Tipo} onChange={e => setForm(f => ({ ...f, Tipo: e.target.value }))}
+                    className="input">
+                    {tipos.map(t => <option key={t}>{t}</option>)}
+                  </select>
+                </Field>
+                <Field label="Dia">
+                  <select value={form.Dia} onChange={e => setForm(f => ({ ...f, Dia: e.target.value }))}
+                    className="input">
+                    {dias.map(d => <option key={d}>{d}</option>)}
+                  </select>
+                </Field>
+              </div>
+
+              <Field label="Nome">
+                <div className="space-y-1">
+                  <input
+                    list="nomes-list"
+                    value={form.Nome}
+                    onChange={e => handleNomeChange(e.target.value)}
+                    className="input"
+                    placeholder="Nome ou deixar vazio (fica Disponível)"
+                  />
+                  <datalist id="nomes-list">
+                    {nomeSuggestions.map(n => <option key={n.Nome} value={n.Nome} />)}
+                  </datalist>
+                  {form.Nome
+                    ? <div className="text-xs text-amber-600">→ Status: Atribuído</div>
+                    : <div className="text-xs text-slate-400">→ Status: Disponível</div>}
+                </div>
               </Field>
-              <Field label="Dia">
-                <select value={form.Dia} onChange={e => setForm(f => ({ ...f, Dia: e.target.value }))}
-                  className="input">
-                  {dias.map(d => <option key={d}>{d}</option>)}
-                </select>
-              </Field>
-              <Field label="Nome (opcional — filtra por Tipo+Dia da BD)">
+
+              <Field label="Ação Parceiro (Entidade)">
                 <input
-                  list="nomes-list"
-                  value={form.Nome}
-                  onChange={e => setForm(f => ({ ...f, Nome: e.target.value }))}
+                  value={form.AcaoParceiro}
+                  onChange={e => setForm(f => ({ ...f, AcaoParceiro: e.target.value }))}
                   className="input"
-                  placeholder="Deixar em branco = Disponível"
+                  placeholder="Preenchido automaticamente pelo nome"
                 />
-                <datalist id="nomes-list">
-                  {nomeSuggestions.map(n => <option key={n} value={n} />)}
-                </datalist>
               </Field>
+
               <Field label="Email">
                 <input type="email" value={form.Email} onChange={e => setForm(f => ({ ...f, Email: e.target.value }))}
                   className="input" />
@@ -241,18 +259,7 @@ export default function DistribView({ festival }) {
                 <input value={form.Telefone} onChange={e => setForm(f => ({ ...f, Telefone: e.target.value }))}
                   className="input" />
               </Field>
-              <Field label="Ação Parceiro">
-                <input value={form.AcaoParceiro} onChange={e => setForm(f => ({ ...f, AcaoParceiro: e.target.value }))}
-                  className="input" />
-              </Field>
-              <Field label="Status">
-                <select value={form.Status} onChange={e => setForm(f => ({ ...f, Status: e.target.value }))}
-                  className="input">
-                  <option>Disponível</option>
-                  <option>Atribuído</option>
-                  <option>Enviado</option>
-                </select>
-              </Field>
+
               <div className="flex gap-2 justify-end pt-2">
                 <button type="button" onClick={() => setShowForm(false)}
                   className="px-4 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-100 transition">
@@ -289,7 +296,10 @@ function DistribTable({ rows, cols, onEdit, onDelete, renderActions }) {
   if (!rows.length) {
     return <div className="text-center py-6 text-slate-400 text-sm">Sem bilhetes</div>
   }
-  const colLabels = { Dia: 'Dia', NrBilhete: 'Nº Bilhete', Tipo: 'Tipo', AcaoParceiro: 'Ação Parceiro', Nome: 'Nome', Email: 'Email' }
+  const colLabels = {
+    Dia: 'Dia', NrBilhete: 'Nº Bilhete', Tipo: 'Tipo',
+    AcaoParceiro: 'Entidade', Nome: 'Nome', Email: 'Email',
+  }
   return (
     <div className="overflow-auto">
       <table className="w-full text-sm">

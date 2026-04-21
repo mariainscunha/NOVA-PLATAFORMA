@@ -8,7 +8,7 @@ import {
 
 const EMPTY_FORM = {
   STATUS: 'Por Enviar', EnviadoPor: '', Entidade: 'BYD Portugal',
-  Nome: '', Tipo: 'Relvado', Email: '', Observacoes: '',
+  Nome: '', Tipo: 'Relvado', Email: '', Observacoes: '', Quantidade: 1,
 }
 
 export default function PedidosView({ festival }) {
@@ -50,9 +50,6 @@ export default function PedidosView({ festival }) {
   async function cycleStatus(row) {
     const next = STATUS_NEXT[row.STATUS] || 'Por Enviar'
     await supabase.from(table).update({ STATUS: next }).eq('id', row.id)
-    if (next === 'Enviado') {
-      // sync: not needed here — distrib sync handles it the other way
-    }
     load()
   }
 
@@ -65,7 +62,7 @@ export default function PedidosView({ festival }) {
   function openEdit(row) {
     setEditId(row.id)
     const f = { ...EMPTY_FORM }
-    Object.keys(EMPTY_FORM).forEach(k => { f[k] = row[k] ?? '' })
+    Object.keys(EMPTY_FORM).forEach(k => { f[k] = row[k] ?? EMPTY_FORM[k] })
     dias.forEach(d => { f[`Dia_${d}`] = row[`Dia_${d}`] ?? 'Não' })
     setForm(f)
     setShowForm(true)
@@ -74,7 +71,7 @@ export default function PedidosView({ festival }) {
   async function saveForm(e) {
     e.preventDefault()
     setSaving(true)
-    const payload = { ...form }
+    const payload = { ...form, Quantidade: parseInt(form.Quantidade) || 1 }
     dias.forEach(d => { payload[`Dia_${d}`] = form[`Dia_${d}`] === 'Sim' ? 'Sim' : 'Não' })
     if (editId) {
       await supabase.from(table).update(payload).eq('id', editId)
@@ -99,7 +96,6 @@ export default function PedidosView({ festival }) {
 
   return (
     <div className="space-y-4">
-      {/* Toolbar */}
       <div className="flex flex-wrap gap-2 items-center">
         <input
           type="text"
@@ -130,7 +126,6 @@ export default function PedidosView({ festival }) {
         </button>
       </div>
 
-      {/* Table */}
       <div className="bg-white rounded-2xl shadow-sm overflow-auto">
         {loading ? (
           <div className="text-center py-10 text-slate-400">A carregar...</div>
@@ -143,6 +138,7 @@ export default function PedidosView({ festival }) {
                 <th className="px-4 py-3 text-left">Nome</th>
                 <th className="px-4 py-3 text-left">Entidade</th>
                 <th className="px-4 py-3 text-left">Tipo</th>
+                <th className="px-4 py-3 text-center">Qtd</th>
                 {dias.map(d => <th key={d} className="px-2 py-3 text-center">{d}</th>)}
                 <th className="px-4 py-3 text-left">Status</th>
                 <th className="px-4 py-3 text-left">Ações</th>
@@ -154,6 +150,7 @@ export default function PedidosView({ festival }) {
                   <td className="px-4 py-3 font-medium text-slate-800">{row.Nome}</td>
                   <td className="px-4 py-3 text-slate-600">{row.Entidade}</td>
                   <td className="px-4 py-3 text-slate-600">{row.Tipo}</td>
+                  <td className="px-4 py-3 text-center font-semibold text-slate-700">{row.Quantidade || 1}</td>
                   {dias.map(d => (
                     <td key={d} className="px-2 py-3 text-center">
                       {row[`Dia_${d}`] === 'Sim'
@@ -182,7 +179,6 @@ export default function PedidosView({ festival }) {
         )}
       </div>
 
-      {/* Modal Form */}
       {showForm && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 max-h-screen overflow-y-auto">
@@ -200,12 +196,22 @@ export default function PedidosView({ festival }) {
                   {ENTIDADES.map(e => <option key={e}>{e}</option>)}
                 </select>
               </Field>
-              <Field label="Tipo">
-                <select value={form.Tipo} onChange={e => setForm(f => ({ ...f, Tipo: e.target.value }))}
-                  className="input">
-                  {tipos.map(t => <option key={t}>{t}</option>)}
-                </select>
-              </Field>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Tipo">
+                  <select value={form.Tipo} onChange={e => setForm(f => ({ ...f, Tipo: e.target.value }))}
+                    className="input">
+                    {tipos.map(t => <option key={t}>{t}</option>)}
+                  </select>
+                </Field>
+                <Field label="Quantidade">
+                  <input
+                    type="number" min="1" max="999"
+                    value={form.Quantidade}
+                    onChange={e => setForm(f => ({ ...f, Quantidade: e.target.value }))}
+                    className="input"
+                  />
+                </Field>
+              </div>
               <Field label="Email">
                 <input type="email" value={form.Email} onChange={e => setForm(f => ({ ...f, Email: e.target.value }))}
                   className="input" />

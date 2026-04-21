@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { exportExcel } from '../lib/excel'
-import { FESTIVALS, RIR_DAYS, NOSALIVE_DAYS, RIR_TIPOS, NOSALIVE_TIPOS } from '../lib/constants'
+import { FESTIVALS, RIR_DAYS, NOSALIVE_DAYS, RIR_TIPOS, NOSALIVE_TIPOS, ENVIADO_POR } from '../lib/constants'
 
 const EMPTY_FORM = {
   NrBilhete: '', Tipo: 'Relvado', Dia: '', Status: 'Disponível',
-  Nome: '', Email: '', Telefone: '', AcaoParceiro: '',
+  Nome: '', Email: '', Telefone: '', AcaoParceiro: '', EnviadoPor: '',
 }
 
 function NomeAutocomplete({ value, onChange, suggestions }) {
@@ -82,6 +82,7 @@ export default function DistribView({ festival }) {
   const bdTable = isRiR ? 'BD_RiR' : 'BD_NosAlive'
 
   const [rows, setRows] = useState([])
+  const [bdRows, setBdRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ ...EMPTY_FORM, Tipo: tipos[0], Dia: dias[0] })
@@ -92,8 +93,12 @@ export default function DistribView({ festival }) {
 
   async function load() {
     setLoading(true)
-    const { data } = await supabase.from(table).select('*').order('Dia').order('NrBilhete')
-    setRows(data || [])
+    const [{ data: distrib }, { data: bd }] = await Promise.all([
+      supabase.from(table).select('*').order('Dia').order('NrBilhete'),
+      supabase.from(bdTable).select('Nome,Tipo,Quantidade,STATUS,' + dias.map(d => `Dia_${d}`).join(',')),
+    ])
+    setRows(distrib || [])
+    setBdRows(bd || [])
     setLoading(false)
   }
 
@@ -161,6 +166,7 @@ export default function DistribView({ festival }) {
       Email: row.Email || '',
       Telefone: row.Telefone || '',
       AcaoParceiro: row.AcaoParceiro || '',
+      EnviadoPor: row.EnviadoPor || '',
     })
     setShowForm(true)
   }
@@ -199,9 +205,28 @@ export default function DistribView({ festival }) {
   }
 
   async function handleExport() {
-    const { data: bdData } = await supabase.from(bdTable).select('*')
-    exportExcel(festival, bdData || [], rows)
+    exportExcel(festival, bdRows, rows)
   }
+
+  // Resumo por pessoa: pedido total vs alocado na distribuição
+  const resumoPessoas = (() => {
+    const map = {}
+    bdRows.forEach(r => {
+      if (r.STATUS === 'Verificar' || !r.Nome) return
+      const qty = parseInt(r.Quantidade) || 1
+      const daysCount = dias.filter(d => r[`Dia_${d}`] === 'Sim').length
+      const total = qty * daysCount
+      if (!map[r.Nome]) map[r.Nome] = { Nome: r.Nome, pedido: 0, alocado: 0, enviado: 0 }
+      map[r.Nome].pedido += total
+    })
+    rows.forEach(r => {
+      if (!r.Nome) return
+      if (!map[r.Nome]) map[r.Nome] = { Nome: r.Nome, pedido: 0, alocado: 0, enviado: 0 }
+      if (r.Status === 'Atribuído') map[r.Nome].alocado += 1
+      if (r.Status === 'Enviado') { map[r.Nome].alocado += 1; map[r.Nome].enviado += 1 }
+    })
+    return Object.values(map).filter(p => p.pedido > 0)
+  })()
 
   const disponíveis = rows.filter(r => r.Status === 'Disponível').filter(r => !filterDia || r.Dia === filterDia)
   const atribuídos  = rows.filter(r => r.Status === 'Atribuído').filter(r => !filterDia || r.Dia === filterDia)
@@ -229,6 +254,46 @@ export default function DistribView({ festival }) {
         <div className="text-center py-10 text-slate-400">A carregar...</div>
       ) : (
         <>
+          {/* Resumo por pessoa */}
+          {resumoPessoas.length > 0 && (
+            <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+              <div className="px-6 py-3 border-b border-slate-100 flex items-center gap-2">
+                <span className="font-semibold text-sm text-slate-700">Resumo por Pessoa</span>
+              </div>
+              <div className="overflow-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
+                    <tr>
+                      <th className="px-4 py-2 text-left">Nome</th>
+                      <th className="px-4 py-2 text-center">Pedido</th>
+                      <th className="px-4 py-2 text-center">Alocado</th>
+                      <th className="px-4 py-2 text-center">Enviado</th>
+                      <th className="px-4 py-2 text-center">Por Alocar</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {resumoPessoas.map(p => {
+                      const porAlocar = p.pedido - p.alocado
+                      return (
+                        <tr key={p.Nome} className="hover:bg-slate-50">
+                          <td className="px-4 py-2 font-medium text-slate-800">{p.Nome}</td>
+                          <td className="px-4 py-2 text-center text-slate-600">{p.pedido}</td>
+                          <td className="px-4 py-2 text-center text-amber-600 font-medium">{p.alocado}</td>
+                          <td className="px-4 py-2 text-center text-green-600 font-medium">{p.enviado}</td>
+                          <td className="px-4 py-2 text-center">
+                            <span className={`font-semibold ${porAlocar > 0 ? 'text-red-500' : 'text-slate-400'}`}>
+                              {porAlocar > 0 ? porAlocar : '✓'}
+                            </span>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
           <Section title="Não Alocados" count={disponíveis.length} color="text-slate-600">
             <DistribTable rows={disponíveis}
               cols={['Dia', 'NrBilhete', 'Tipo', 'AcaoParceiro']}
@@ -252,7 +317,7 @@ export default function DistribView({ festival }) {
 
           <Section title="Enviados" count={enviados.length} color="text-green-600">
             <DistribTable rows={enviados}
-              cols={['Dia', 'NrBilhete', 'Tipo', 'Nome', 'AcaoParceiro', 'Email']}
+              cols={['Dia', 'NrBilhete', 'Tipo', 'Nome', 'AcaoParceiro', 'Email', 'EnviadoPor']}
               onEdit={openEdit} onDelete={deleteRow} />
           </Section>
         </>
@@ -315,6 +380,13 @@ export default function DistribView({ festival }) {
                   onChange={e => setForm(f => ({ ...f, Telefone: e.target.value }))}
                   className="input" />
               </Field>
+              <Field label="Enviado Por">
+                <select value={form.EnviadoPor}
+                  onChange={e => setForm(f => ({ ...f, EnviadoPor: e.target.value }))}
+                  className="input">
+                  {ENVIADO_POR.map(p => <option key={p} value={p}>{p || '— selecionar —'}</option>)}
+                </select>
+              </Field>
 
               <div className="flex gap-2 justify-end pt-2">
                 <button type="button" onClick={() => setShowForm(false)}
@@ -354,7 +426,7 @@ function DistribTable({ rows, cols, onEdit, onDelete, renderActions }) {
   }
   const colLabels = {
     Dia: 'Dia', NrBilhete: 'Nº Bilhete', Tipo: 'Tipo',
-    AcaoParceiro: 'Entidade', Nome: 'Nome', Email: 'Email',
+    AcaoParceiro: 'Entidade', Nome: 'Nome', Email: 'Email', EnviadoPor: 'Enviado Por',
   }
   return (
     <div className="overflow-auto">

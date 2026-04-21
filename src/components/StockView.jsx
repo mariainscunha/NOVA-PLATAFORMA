@@ -81,13 +81,15 @@ export default function StockView({ festival }) {
                   {neg === 0 ? (
                     <>
                       <div className="text-lg font-bold mb-1 text-slate-400">A definir</div>
-                      <div className="text-xs text-slate-400 mb-2">{used} pedidos</div>
+                      <div className="text-xs text-slate-400 mb-2">{used} usados</div>
                       <div className="w-full bg-slate-100 rounded-full h-2" />
                     </>
                   ) : (
                     <>
                       <div className={`text-2xl font-bold mb-1 ${textColor(pct)}`}>{livres}</div>
-                      <div className="text-xs text-slate-400 mb-2">livres de {neg}</div>
+                      <div className="text-xs text-slate-400 mb-2">
+                        <span className="font-medium text-slate-600">{used} usados</span> de {neg}
+                      </div>
                       <div className="w-full bg-slate-100 rounded-full h-2">
                         <div
                           className={`h-2 rounded-full transition-all ${barColor(pct)}`}

@@ -97,7 +97,7 @@ export default function DistribView({ festival }) {
     setLoading(true)
     const [{ data: distrib }, { data: bd }] = await Promise.all([
       supabase.from(table).select('*').order('Dia').order('NrBilhete'),
-      supabase.from(bdTable).select('Nome,Tipo,Quantidade,STATUS,' + dias.map(d => `Dia_${d}`).join(',')),
+      supabase.from(bdTable).select('*'),
     ])
     setRows(distrib || [])
     setBdRows(bd || [])

@@ -22,8 +22,8 @@ export const STOCK_RIR = {
 }
 
 export const STOCK_NOSALIVE = {
-  Relvado: { '9jul': 100, '10jul': 110, '11jul': 115 },
-  Rooftop: { '9jul': 40,  '10jul': 40,  '11jul': 50  },
+  Relvado: { '9jul': 100, '10jul': 100, '11jul': 100 },
+  Rooftop: { '9jul': 40,  '10jul': 40,  '11jul': 45  },
 }
 
 export const ENTIDADES = [

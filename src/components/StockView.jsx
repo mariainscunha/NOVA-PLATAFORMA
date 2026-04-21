@@ -72,15 +72,25 @@ export default function StockView({ festival }) {
               return (
                 <div key={dia} className="border border-slate-200 rounded-xl p-4">
                   <div className="text-xs font-medium text-slate-500 mb-2 uppercase">{dia}</div>
-                  <div className={`text-2xl font-bold mb-1 ${textColor(pct)}`}>{livres}</div>
-                  <div className="text-xs text-slate-400 mb-2">livres de {neg}</div>
-                  <div className="w-full bg-slate-100 rounded-full h-2">
-                    <div
-                      className={`h-2 rounded-full transition-all ${barColor(pct)}`}
-                      style={{ width: `${Math.min(pct, 100)}%` }}
-                    />
-                  </div>
-                  <div className="text-xs text-slate-400 mt-1">{pct}% usado</div>
+                  {neg === 0 ? (
+                    <>
+                      <div className="text-lg font-bold mb-1 text-slate-400">A definir</div>
+                      <div className="text-xs text-slate-400 mb-2">{used} pedidos</div>
+                      <div className="w-full bg-slate-100 rounded-full h-2" />
+                    </>
+                  ) : (
+                    <>
+                      <div className={`text-2xl font-bold mb-1 ${textColor(pct)}`}>{livres}</div>
+                      <div className="text-xs text-slate-400 mb-2">livres de {neg}</div>
+                      <div className="w-full bg-slate-100 rounded-full h-2">
+                        <div
+                          className={`h-2 rounded-full transition-all ${barColor(pct)}`}
+                          style={{ width: `${Math.min(pct, 100)}%` }}
+                        />
+                      </div>
+                      <div className="text-xs text-slate-400 mt-1">{pct}% usado</div>
+                    </>
+                  )}
                 </div>
               )
             })}

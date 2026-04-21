@@ -11,7 +11,7 @@ export const FESTIVAL_LABELS = {
 export const RIR_DAYS = ['20jun', '21jun', '27jun', '28jun']
 export const NOSALIVE_DAYS = ['9jul', '10jul', '11jul']
 
-export const RIR_TIPOS = ['Relvado', 'Rooftop', 'VIP']
+export const RIR_TIPOS = ['Relvado', 'Rooftop', 'VIP', 'Slide']
 export const NOSALIVE_TIPOS = ['Relvado', 'Rooftop']
 
 // Hardcoded stock negociado
@@ -19,6 +19,7 @@ export const STOCK_RIR = {
   Relvado: { '20jun': 98, '21jun': 98, '27jun': 125, '28jun': 144 },
   Rooftop: { '20jun': 200, '21jun': 200, '27jun': 200, '28jun': 200 },
   VIP:     { '20jun': 25,  '21jun': 25,  '27jun': 34,  '28jun': 40  },
+  Slide:   { '20jun': 0,   '21jun': 0,   '27jun': 0,   '28jun': 0   },
 }
 
 export const STOCK_NOSALIVE = {

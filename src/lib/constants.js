@@ -32,7 +32,7 @@ export const ENVIADO_POR = ['', 'Miriam', 'Ana', 'Inês']
 export const ENTIDADES = [
   'Admin/Dire.', 'BYD Portugal', 'Rede BYD', 'Cliente BYD',
   'Proteção', 'Jornalistas', 'Parceiros', 'Embaixadores',
-  'Influencers', 'Fornecedores', 'Frotas', 'Internos GSC', 'Outros',
+  'Influencers', 'Fornecedores', 'Frotas', 'Internos GSC', 'Pedidos SR', 'Outros',
 ]
 
 // Tipos que incluem bilhete Relvado e também consomem stock de Relvado
